@@ -1,72 +1,53 @@
 import requests
 from bs4 import BeautifulSoup
+import tweepy
 
-def scrape_news_website(url):
-    try:
-        # Scrape news website for articles mentioning RIL
-        # Parse HTML content
-        response = requests.get(url)
-        response.raise_for_status()  # Raise exception for bad response status
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # Extract relevant articles
-        articles = soup.find_all('article')
-        news_data = []
-        for article in articles:
-            news_data.append({
-                'source': url,
-                'text': article.get_text()
-            })
-        return news_data
-    except requests.RequestException as e:
-        print(f"Error scraping {url}: {e}")
-        return []
+# Function to scrape news from a given URL
+def scrape_news(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    news_text = ''
+    # Extract text from relevant elements
+    for element in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+        news_text += element.get_text() + ' '
+    return news_text.strip()
 
-def scrape_twitter():
-    try:
-        # Scrape Twitter for tweets mentioning RIL
-        # Use appropriate library or API to scrape tweets
-        # Sample code using Tweepy:
-        # tweets = api.search(q='Reliance Industries Ltd.', count=10)
-        # twitter_data = []
-        # for tweet in tweets:
-        #     twitter_data.append({
-        #         'source': 'https://twitter.com/',
-        #         'text': tweet.text
-        #     })
-        # return twitter_data
-        return []  # Placeholder
-    except Exception as e:
-        print(f"Error scraping Twitter: {e}")
-        return []
+def scrape_twitter(api_key, api_secret_key, access_token, access_token_secret, query):
+    auth = tweepy.OAuth1UserHandler(api_key, api_secret_key, access_token, access_token_secret)
+    api = tweepy.API(auth)
+    tweets = api.search(q=query, count=10)
+    twitter_text = ''
+    for tweet in tweets:
+        twitter_text += tweet.text + ' '
+    return twitter_text.strip()
 
-def scrape_public_internet():
-    try:
-        # Scrape other public internet sources for mentions of RIL
-        # Write code to scrape relevant data from other sources
-        # Return data in a similar format as other sources
-        return []  # Placeholder
-    except Exception as e:
-        print(f"Error scraping public internet: {e}")
-        return []
+# Main function to fetch news from various sources
+def fetch_latest_news():
+    news_sources = [
+        'https://twitter.com/search?q=Reliance%20Industries%20Ltd&src=typed_query&f=live',
+        'https://timesofindia.indiatimes.com/topic/Reliance-Industries',
+        'https://www.moneycontrol.com/news/business/stocks/reliance-industries-stock-price-ri-1594.html',
+        # Add more news websites URLs as needed
+    ]
 
-def fetch_ril_mentions():
-    try:
-        news_data = scrape_news_website('https://example.com/news')
-        twitter_data = scrape_twitter()
-        internet_data = scrape_public_internet()
 
-        # Combine data from all sources
-        all_data = news_data + twitter_data + internet_data
+    api_key = 'your_api_key'
+    api_secret_key = 'your_api_secret_key'
+    access_token = 'your_access_token'
+    access_token_secret = 'your_access_token_secret'
 
-        # Optionally filter or process the data here
-        # For example, remove duplicates or filter out irrelevant mentions
-        
-        return all_data
-    except Exception as e:
-        print(f"Error fetching RIL mentions: {e}")
-        return []
+    news_data = []
 
-# Example usage
-ril_mentions = fetch_ril_mentions()
-for mention in ril_mentions:
-    print(mention)
+
+    for source in news_sources:
+        if 'twitter.com' in source:
+            text = scrape_twitter(api_key, api_secret_key, access_token, access_token_secret, 'Reliance Industries Ltd')
+        else:
+            text = scrape_news(source)
+        news_data.append({'source': source, 'text': text})
+
+    return news_data
+
+latest_news = fetch_latest_news()
+for news in latest_news:
+    print(news)
